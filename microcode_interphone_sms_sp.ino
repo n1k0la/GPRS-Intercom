@@ -5,6 +5,7 @@
 // https://lastminuteengineers.com/sim800l-gsm-module-arduino-tutorial
 // https://arduinogetstarted.com/tutorials/arduino-lcd-i2c
 // Bibliothèque GPRS
+// Sémentique de version: https://semver.org/lang/fr/#gestion-s%C3%A9mantique-de-version-200
 //////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////
