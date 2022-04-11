@@ -26,9 +26,16 @@ int appel_app = 12;
 int etat_appel = 0;
 //int led_diag =
 int relais_1 = 13;
+
+int inComing = 0;
+char gprsBuffer[140];
+int i = 0;
+char *s = NULL;
+
 LiquidCrystal_I2C lcd(0x27, 20, 4); // I2C address 0x27, 16 column and 2 rows
 GPRS gprs;
 
+void lcdDisplayStatus();
 ////////////////////////////////////////////
 //  SETUP
 //
@@ -68,33 +75,55 @@ void setup() {
 //
 //////////////////////////////////////////
 
-void loop() {
-
-
-  
-if(digitalRead(appel_app) == HIGH){
-  
+void loop() 
+{
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("GPRS- Call");
-      delay(2000);
-      digitalWrite(relais_1, HIGH);
-      //Serial.println("Start to send SMS message...");
-      
-      gprs.sendSMS(NUMBER,"Mister Bunny someone at the for you");
-      gprs.callUp(NUMBER);
-      delay(20000);
-      gprs.hangup();
-      lcd.clear();
+      lcd.print("GPRS- Standby");
+      Serial.println("GPRS- Standby");
   
-  }
- else {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("GPRS-Standby");
- }
-}
+      if(digitalRead(appel_app) == HIGH)
+      {
+        
+            lcd.clear();
+            lcd.setCursor(0, 1);
+            lcd.print("GPRS- Call");
+            delay(1000);
+            digitalWrite(relais_1, HIGH);
+            Serial.println("Send SMS message.");
+            
+            gprs.sendSMS(NUMBER,"Mister Bunny, someone at the for you.");
+            gprs.callUp(NUMBER);
+            Serial.println("Calling ..."); 
+      }
 
+
+
+      
+ if(gprs.serialSIM800.available()) 
+ {
+        inComing = 1;
+ }else
+ {
+        delay(100);
+ }
+        if(inComing)
+        {
+          gprs.readBuffer(gprsBuffer, 140, DEFAULT_TIMEOUT);
+          Serial.println(gprsBuffer);
+                          
+               if(NULL != strstr(gprsBuffer,"NO CARRIER"))
+               {
+                   Serial.println(gprsBuffer);
+                   gprs.hangup();
+                   digitalWrite(relais_1, LOW);
+                    
+                   gprs.cleanBuffer(gprsBuffer,140);  
+                   inComing = 0;
+                }
+        }
+}
+                
 ///////////////////////////////////////////
 //  Définitions de fonctions: 
 //
