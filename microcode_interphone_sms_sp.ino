@@ -41,6 +41,8 @@ void lcdDisplayStatus();
 //
 ////////////////////////////////////////////
 void setup() {
+
+  gprs.micGainUp();
   
   //////////////////////////////////////////
   // LCD DISPLAY
@@ -53,8 +55,7 @@ void setup() {
 
   //////////////////////////////////////////
   // I/O
-  
-  
+
   //////////////////////////////////////////
   // Port serie  
   Serial.begin(9600);
@@ -86,32 +87,36 @@ void loop()
       if(digitalRead(appel_app) == HIGH)
       {
         
-            lcd.clear();
-            lcd.setCursor(0, 1);
-            lcd.print("GPRS- Call");
-            delay(1000);
-            digitalWrite(relais_1, HIGH);
-            Serial.println("Send SMS message.");
+		lcd.clear();
+		lcd.setCursor(0, 1);
+		lcd.print("GPRS- Call");
+		lcd.setCursor(0, 2);
+		lcd.print("Sending SMS Message");
+		lcd.setCursor(0, 3);
+		lcd.print("Call in progress");
+
+        	delay(1000);
+		digitalWrite(relais_1, HIGH);
+		Serial.println("Send SMS message.");
             
-            gprs.sendSMS(NUMBER,"Mister Bunny, someone at the for you.");
-            gprs.callUp(NUMBER);
-            Serial.println("Calling ..."); 
-      }
+		gprs.sendSMS(NUMBER,"Mister Bunny, someone at the for you.");
+		gprs.callUp(NUMBER);
+		Serial.println("Calling ..."); 
+	}
 
 
 
-      
- if(gprs.serialSIM800.available()) 
- {
-        inComing = 1;
- }else
- {
-        delay(100);
- }
-        if(inComing)
+		if(gprs.serialSIM800.available()) 
+ 	{
+        	inComing = 1;
+ 	}else
+ 	{
+       		delay(100);
+ 	}
+        	if(inComing)
         {
-          gprs.readBuffer(gprsBuffer, 140, DEFAULT_TIMEOUT);
-          Serial.println(gprsBuffer);
+          	gprs.readBuffer(gprsBuffer, 140, DEFAULT_TIMEOUT);
+         	Serial.println(gprsBuffer);
                           
                if(NULL != strstr(gprsBuffer,"NO CARRIER"))
                {
