@@ -142,6 +142,12 @@ public:
       *
       */
   
+      int micGainUp(void);
+     /**
+      *
+      *
+      */
+  
       int hangUpCheck(void);
      /**
       *
