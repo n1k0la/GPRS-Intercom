@@ -253,13 +253,19 @@ int GPRS::hangup(void)
     return 0;
 }
 
+int GPRS::micGainUp(void)
+{
+    serialSIM800.write("AT+CMIC=1,8\r\n");
+    return 0;
+}
+
 int GPRS::hangUpCheck(void)
 {
     int inComing = 0;
     char gprsBuffer[140];
     int i = 0;
     char *s = NULL;
-    int relais_1 = 13;
+    
 
 
 
@@ -278,12 +284,13 @@ int GPRS::hangUpCheck(void)
                {
                    Serial.println(gprsBuffer);
                    hangup();
-                   digitalWrite(relais_1, LOW);
+                   //digitalWrite(relais_1, LOW);
                     
                    cleanBuffer(gprsBuffer,140);  
                    inComing = 0;
                 }
     }
+    return 0;
 }
                  
 
