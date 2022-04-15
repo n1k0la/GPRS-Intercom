@@ -1,3 +1,4 @@
+
 /*
  * gprs.h
  * A library for SeeedStudio seeeduino GPRS shield
@@ -147,7 +148,11 @@ public:
       *
       *
       */
-  
+      int spkVolLvl(void);
+    /**
+     * 
+     * 
+     */
       int hangUpCheck(void);
      /**
       *
