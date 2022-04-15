@@ -1,13 +1,12 @@
+
 /*
- * gprs.cpp
+ * gprs.h
  * A library for SeeedStudio seeeduino GPRS shield
  *
  * Copyright (c) 2013 seeed technology inc.
  * Author        :   lawliet zou
  * Create Time   :   Dec 2013
- * Change Log    :   2017-05-31 GPRS::readSMS modified to support SMS international
-                     increment the buffer to read the whole message 
-                     Jose Zorrilla (jzorrilla@x-red.com)
+ * Change Log    :
  *
  * The MIT License (MIT)
  *
@@ -30,307 +29,168 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include "gprs.h"
+#ifndef __GPRS_H__
+#define __GPRS_H__
 
-int GPRS::init(void)
+#include "sim800.h"
+
+enum Protocol {
+    CLOSED = 0,
+    TCP    = 1,
+    UDP    = 2,
+};
+
+/** GPRS class.
+ *  used to realize GPRS communication
+ */
+#define MESSAGE_LENGTH  100
+
+class GPRS: public SIM800
 {
-#if 0
-    for(int i = 0; i < 2; i++){
-        sendCmd("AT\r\n");
-        delay(100);
-    }
-    sendCmd("AT+CFUN=1\r\n");
-    if(0 != checkSIMStatus()) {
-        ERROR("ERROR:checkSIMStatus");
-        return -1;
-    }
-    return 0;
+public:
+    uint32_t _ip;
+    char ip_string[20];
 
-#endif
-    if(sendCmdAndWaitForResp("AT\r\n","OK\r\n",DEFAULT_TIMEOUT*3)){
-      return -1;
-    }
-    if(sendCmdAndWaitForResp("AT+CFUN=1\r\n","OK\r\n",DEFAULT_TIMEOUT*3)){
-      return -1;
-    }
-    if(checkSIMStatus()) {
-		  return -1;
-    }
-    return 0;
+    /** Create GPRS instance
+     *  @param number default phone number during mobile communication
+     */
+    GPRS(int baudRate = 9600):SIM800(baudRate){};
 
-}
+    /** initialize GPRS module including SIM card check & signal strength
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int init(void);
 
-bool GPRS::join(const char *apn, const char *userName, const char *passWord)
-{
-    char cmd[64];
-    char ipAddr[32];
-    char gprsBuffer[32];
-   
-    //Select multiple connection
-    //sim900_check_with_cmd("AT+CIPMUX=1\r\n","OK",DEFAULT_TIMEOUT,CMD);
+    /** Join APN
+     *  @return
+     *        true Jion APN successfully
+     *        false failed to join VPN
+     */
+    bool join(const char  *apn = 0, const char *userName = 0, const char *passWord = 0);
+
+
+    /** parse IP string
+     *  @return
+     *      ip in hex
+     */
+    uint32_t str_to_ip(const char* str);
+
+    /** get Ip address
+     *  @return
+     *       IP string
+     */
+    char* getIPAddress();
+
+    /** check SIM card' Status
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int checkSIMStatus(void);
+
+    /** check network is OK or not
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int networkCheck(void);
+
+    /** send text SMS
+     *  @param  *number phone number which SMS will be send to
+     *  @param  *data   message that will be send to
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int sendSMS(char* number, char* data);
+
+    /** read SMS if getting a SMS message
+     *  @param  buffer  buffer that get from GPRS module(when getting a SMS, GPRS module will return a buffer array)
+     *  @param  message buffer used to get SMS message
+     *  @param  check   whether to check phone number(we may only want to read SMS from specified phone number)
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int readSMS(int messageIndex, char *message, int length);
+
+    /** delete SMS message on SIM card
+     *  @param  index   the index number which SMS message will be delete
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int deleteSMS(int index);
+
+    /** call someone
+     *  @param  number  the phone number which you want to call
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int callUp(char* number);
+
+    /** auto answer if coming a call
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+     int hangup(void);
+     /**
+      *
+      *
+      */
+  
+      int micGainUp(void);
+     /**
+      *
+      *
+      */
+      int spkVolLvl(void);
+    /**
+     * 
+     * 
+     */
+      int hangUpCheck(void);
+     /**
+      *
+      *
+      */  
       
-    cleanBuffer(ipAddr,32);
-    sendCmd("AT+CIFSR\r\n");    
-    readBuffer(ipAddr,32,2);
-    
-    // If no IP address feedback than bring up wireless 
-    if( NULL != strstr(ipAddr, "ERROR") )
-    {
-        if( 0 != sendCmdAndWaitForResp("AT+CSTT?\r\n", apn, DEFAULT_TIMEOUT) )
-        {
-            sendCmd("AT+CSTT=\"");
-            sendCmd(apn);
-            sendCmd("\",\"");
-            sendCmd(userName);
-            sendCmd("\",\"");
-            sendCmd(passWord);        
-            sendCmdAndWaitForResp("\"\r\n","OK\r\n",DEFAULT_TIMEOUT*3);
-        }
-        
-        //Brings up wireless connection
-        sendCmd("AT+CIICR\r\n");
-         
-        //Get local IP address
-        cleanBuffer(ipAddr,32);
-        sendCmd("AT+CIFSR\r\n");
-        readBuffer(ipAddr,32,2);        
-    }          
-#if 0    
-    Serial.print("ipAddr: ");
-    Serial.println(ipAddr);
+    int answer(void);
+
+    /** build TCP connect
+     *  @param  ip  ip address which will connect to
+     *  @param  port    TCP server' port number
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */     
+     
+    int connectTCP(const char* ip, int port);
+
+    /** send data to TCP server
+     *  @param  data    data that will be send to TCP server
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int sendTCPData(char* data);
+
+    /** close TCP connection
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int closeTCP(void);
+
+    /** close TCP service
+     *  @returns
+     *      0 on success
+     *      -1 on error
+     */
+    int shutTCP(void);
+};
 #endif
-
-    if(NULL != strstr(ipAddr,"AT+CIFSR")) {        
-        _ip = str_to_ip(ipAddr+11);
-        if(_ip != 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-uint32_t GPRS::str_to_ip(const char* str)
-{
-    uint32_t ip = 0;
-    char *p = (char*)str;
-    
-    for(int i = 0; i < 4; i++) {
-        ip |= atoi(p);
-        p = strchr(p, '.');
-        if (p == NULL) {
-            break;
-        }
-        if(i < 3) ip <<= 8;
-        p++;
-    }
-    return ip;
-}
-
-//HACERR lo de la IP gasta muuuucho espacio (ver .h y todo esto)
-char* GPRS::getIPAddress()
-{
-    uint8_t a = (_ip>>24)&0xff;
-    uint8_t b = (_ip>>16)&0xff;
-    uint8_t c = (_ip>>8)&0xff;
-    uint8_t d = _ip&0xff;
-
-    snprintf(ip_string, sizeof(ip_string), "%d.%d.%d.%d", a,b,c,d);
-    return ip_string;
-}
-
-int GPRS::checkSIMStatus(void)
-{
-    char gprsBuffer[32];
-    int count = 0;
-    cleanBuffer(gprsBuffer,32);
-    while(count < 3) {
-        sendCmd("AT+CPIN?\r\n");
-        readBuffer(gprsBuffer,32,DEFAULT_TIMEOUT);
-        if((NULL != strstr(gprsBuffer,"+CPIN: READY"))) {
-            break;
-        }
-        count++;
-        delay(300);
-    }
-    if(count == 3) {
-        return -1;
-    }
-    return 0;
-}
-
-int GPRS::networkCheck(void)
-{
-    delay(1000);
-    if(0 != sendCmdAndWaitForResp("AT+CGREG?\r\n","+CGREG: 0,1",DEFAULT_TIMEOUT*3)) {
-        ERROR("ERROR:CGREG");
-        return -1;
-    }
-    delay(1000);
-    if(0 != sendCmdAndWaitForResp("AT+CGATT?\r\n","+CGATT: 1",DEFAULT_TIMEOUT)) {
-        ERROR("ERROR:CGATT");
-        return -1;
-    }
-    return 0;
-}
-
-int GPRS::sendSMS(char *number, char *data)
-{
-    char cmd[32];
-    if(0 != sendCmdAndWaitForResp("AT+CMGF=1\r\n", "OK", DEFAULT_TIMEOUT)) { // Set message mode to ASCII
-        ERROR("ERROR:CMGF");
-        return -1;
-    }
-    delay(500);
-    snprintf(cmd, sizeof(cmd),"AT+CMGS=\"%s\"\r\n", number);
-    if(0 != sendCmdAndWaitForResp(cmd,">",DEFAULT_TIMEOUT)) {
-        ERROR("ERROR:CMGS");
-        return -1;
-    }
-    delay(1000);
-    serialSIM800.write(data);
-    delay(500);
-    sendEndMark();
-    return 0;
-}
-
-int GPRS::readSMS(int messageIndex, char *message, int length)
-{
-    int i = 0;
-    char gprsBuffer[144]; // Buffer size for the SMS message
-    char cmd[16];
-    char *p,*s;
-
-    sendCmdAndWaitForResp("AT+CMGF=1\r\n","OK",DEFAULT_TIMEOUT);
-    delay(1000);
-    sprintf(cmd,"AT+CMGR=%d\r\n",messageIndex);
-    serialSIM800.write(cmd);
-    cleanBuffer(gprsBuffer,144);
-    readBuffer(gprsBuffer,144,DEFAULT_TIMEOUT);
-
-    if(NULL != ( s = strstr(gprsBuffer,"+CMGR"))){
-        if(NULL != ( s = strstr(gprsBuffer,"REC"))){  // Search the beginning of the SMS message
-            p = s - 1;
-            while((i < length-1)) {
-                message[i++] = *(p++);
-            }
-            message[i] = '\0';
-        }
-    }
-    return 0;
-}
-
-int GPRS::deleteSMS(int index)
-{
-    char cmd[16];
-    snprintf(cmd,sizeof(cmd),"AT+CMGD=%d\r\n",index);
-    sendCmd(cmd);
-    return 0;
-}
-
-int GPRS::callUp(char *number)
-{
-    char cmd[24];
-    if(0 != sendCmdAndWaitForResp("AT+COLP=1\r\n","OK",5)) {
-        ERROR("COLP");
-        return -1;
-    }
-    delay(1000);
-    sprintf(cmd,"\r\nATD%s;\r\n", number);
-    serialSIM800.write(cmd);
-    return 0;
-}
-
-int GPRS::answer(void)
-{
-    serialSIM800.write("ATA\r\n");
-    return 0;
-}
-
-int GPRS::hangup(void)
-{
-    serialSIM800.write("ATH\r\n");
-    return 0;
-}
-
-int GPRS::micGainUp(void)
-{
-    serialSIM800.write("AT+CMIC=1,8\r\n");
-    return 0;
-}
-
-int GPRS::hangUpCheck(void)
-{
-    int inComing = 0;
-    char gprsBuffer[140];
-    int i = 0;
-    char *s = NULL;
-    
-
-
-
-    if(serialSIM800.available()) 
-    {
-        inComing = 1;
-    }else{
-        delay(100);
-    }
-    if(inComing)
-    {
-        readBuffer(gprsBuffer, 140, DEFAULT_TIMEOUT);
-        Serial.println(gprsBuffer);
-                          
-               if(NULL != strstr(gprsBuffer,"NO CARRIER")) 
-               {
-                   Serial.println(gprsBuffer);
-                   hangup();
-                   //digitalWrite(relais_1, LOW);
-                    
-                   cleanBuffer(gprsBuffer,140);  
-                   inComing = 0;
-                }
-    }
-    return 0;
-}
-                 
-
-
-int GPRS::connectTCP(const char *ip, int port)
-{
-    char cipstart[50];
-    sprintf(cipstart, "AT+CIPSTART=\"TCP\",\"%s\",\"%d\"\r\n", ip, port);
-    if(0 != sendCmdAndWaitForResp(cipstart, "CONNECT OK", 2*DEFAULT_TIMEOUT)) {// connect tcp
-        ERROR("ERROR:CIPSTART");
-        return -1;
-    }
-
-    return 0;
-}
-int GPRS::sendTCPData(char *data)
-{
-    char cmd[32];
-    int len = strlen(data); 
-    snprintf(cmd,sizeof(cmd),"AT+CIPSEND=%d\r\n",len);
-    if(0 != sendCmdAndWaitForResp(cmd,">",2*DEFAULT_TIMEOUT)) {
-        ERROR("ERROR:CIPSEND");
-        return -1;
-    }
-        
-    if(0 != sendCmdAndWaitForResp(data,"SEND OK",2*DEFAULT_TIMEOUT)) {
-        ERROR("ERROR:SendTCPData");
-        return -1;
-    }     
-    return 0;
-}
-
-int GPRS::closeTCP(void)
-{
-    sendCmd("AT+CIPCLOSE\r\n");
-    return 0;
-}
-
-int GPRS::shutTCP(void)
-{
-    sendCmd("AT+CIPSHUT\r\n");
-    return 0;
-}
